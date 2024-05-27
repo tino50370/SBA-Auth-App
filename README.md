@@ -15,7 +15,6 @@ This is a simple Spring Boot application that demonstrates how to implement JWT 
   - [JWT Utility](#jwt-utility)
 - [Running the Application](#running-the-application)
 - [Testing the Endpoints](#testing-the-endpoints)
-- [License](#license)
 
 ## Prerequisites
 - Java 11 or higher
@@ -24,8 +23,8 @@ This is a simple Spring Boot application that demonstrates how to implement JWT 
 ## Getting Started
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/spring-security-jwt-example.git
-   cd spring-security-jwt-example
+   git clone https://github.com/tino50370/SBA-Auth-App.git
+   cd SBA-Auth-App
    ```
 
 2. Build the project:
@@ -40,26 +39,19 @@ This is a simple Spring Boot application that demonstrates how to implement JWT 
 
 ## Application Structure
 
-### Main Application
+### Main Application Class (`SpringSecurityJwtApplication`)
 
-Explanation:
-- Annotated with `@SpringBootApplication` to mark this class as a Spring Boot application.
+- This is the entry point of the Spring Boot application, annotated with `@SpringBootApplication` to mark this class as a Spring Boot application.
 - Contains the `main` method to launch the Spring Boot application.
 
-### Controller
+### Controller (`HelloWorldController`)
 
-Explanation:
+- Exposes two endpoints: `/hello` (requires authentication) and `/authenticate` (used to obtain a JWT token).
+- The `/authenticate` endpoint authenticates the user and returns a JWT token if successful.
 - Annotated with `@RestController` to mark this class as a controller where every method returns a domain object instead of a view.
-- Defines two endpoints:
-  - `/hello`: Returns a simple "Hello World" message.
-  - `/authenticate`: Authenticates the user and returns a JWT token.
-- Uses `AuthenticationManager` to authenticate the user.
-- Uses `JwtUtil` to generate and return a JWT token upon successful authentication.
-- Uses `MyUserDetailsService` to load user details from a hardcoded user for demonstration purposes.
 
-### Security Configuration
+### Security Configuration (`WebSecurityConfig`)
 
-Explanation:
 - Annotated with `@EnableWebSecurity` to enable Spring Security’s web security support.
 - Extends `WebSecurityConfigurerAdapter` to provide custom security configurations.
 - Defines beans for `AuthenticationManager` and `PasswordEncoder`.
@@ -71,21 +63,23 @@ Explanation:
   - Use stateless session management.
 - Adds a custom filter `JwtRequestFilter` before the `UsernamePasswordAuthenticationFilter` to handle JWT validation.
 
+This setup uses JWT for stateless authentication, allowing the server to verify user credentials without maintaining a session. The JWT token is generated upon successful authentication and must be included in the `Authorization` header of subsequent requests to access protected endpoints.
+
 ### User Details Service
 
-Explanation:
 - Annotated with `@Service` to indicate that this class is a Spring service component.
 - Implements `UserDetailsService` to provide user details for authentication.
 - The `loadUserByUsername` method:
-  - Takes a username as an argument and returns a hardcoded `User` object with:
+  - Takes a username as an argument and, for demonstration purposes, returns a hardcoded `User` object with:
     - Username: `"foo"`
     - Password: `"foo"`
     - Authorities: an empty list (no roles or permissions assigned).
   - In a real application, this method should query a user repository (e.g., database) to retrieve user information.
 
+This service is utilized by the `AuthenticationManager` during the authentication process to verify the user credentials and retrieve user details needed to generate a JWT token.
+
 ### JWT Utility
 
-Explanation:
 - Annotated with `@Service` to indicate that this class is a Spring service component.
 - Manages JWT token generation, extraction, and validation.
 
@@ -143,11 +137,3 @@ This class provides the essential utilities for handling JWT tokens within the S
      Authorization: Bearer your-jwt-token
      ```
    - If the token is valid, you will receive a "Hello World" response.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-This README file provides a detailed overview of the application's functionality, structure, and how to run and test it.
