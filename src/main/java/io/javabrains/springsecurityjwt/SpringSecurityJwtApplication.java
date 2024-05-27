@@ -27,87 +27,97 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-@SpringBootApplication
+@SpringBootApplication // Annotation to mark this class as a Spring Boot application
 public class SpringSecurityJwtApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(SpringSecurityJwtApplication.class, args);
-	}
+    public static void main(String[] args) {
+        // Launch the Spring Boot application
+        SpringApplication.run(SpringSecurityJwtApplication.class, args);
+    }
 
 }
 
-@RestController
+@RestController // Marks this class as a controller where every method returns a domain object instead of a view
 class HelloWorldController {
 
-	@Autowired
-	private AuthenticationManager authenticationManager;
+    @Autowired // Dependency injection for AuthenticationManager
+    private AuthenticationManager authenticationManager;
 
-	@Autowired
-	private JwtUtil jwtTokenUtil;
+    @Autowired // Dependency injection for JwtUtil
+    private JwtUtil jwtTokenUtil;
 
-	@Autowired
-	private MyUserDetailsService userDetailsService;
+    @Autowired // Dependency injection for MyUserDetailsService
+    private MyUserDetailsService userDetailsService;
 
-	@RequestMapping({ "/hello" })
-	public String firstPage() {
-		return "Hello World";
-	}
+    @RequestMapping({ "/hello" }) // Map the /hello endpoint to this method
+    public String firstPage() {
+        return "Hello World"; // Returns a simple message for the /hello endpoint
+    }
 
-	@RequestMapping(value = "/authenticate", method = RequestMethod.POST)
-	public ResponseEntity<?> createAuthenticationToken(@RequestBody AuthenticationRequest authenticationRequest) throws Exception {
+    @RequestMapping(value = "/authenticate", method = RequestMethod.POST) // Map the /authenticate endpoint to this method
+    public ResponseEntity<?> createAuthenticationToken(@RequestBody AuthenticationRequest authenticationRequest) throws Exception {
+        try {
+            // Authenticate the user with the provided username and password
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(authenticationRequest.getUsername(), authenticationRequest.getPassword())
+            );
+        } catch (BadCredentialsException e) {
+            // Throw an exception if the credentials are invalid
+            throw new Exception("Incorrect username or password", e);
+        }
 
-		try {
-			authenticationManager.authenticate(
-					new UsernamePasswordAuthenticationToken(authenticationRequest.getUsername(), authenticationRequest.getPassword())
-			);
-		}
-		catch (BadCredentialsException e) {
-			throw new Exception("Incorrect username or password", e);
-		}
+        // Load user details from the UserDetailsService
+        final UserDetails userDetails = userDetailsService
+                .loadUserByUsername(authenticationRequest.getUsername());
 
+        // Generate a JWT token for the authenticated user
+        final String jwt = jwtTokenUtil.generateToken(userDetails);
 
-		final UserDetails userDetails = userDetailsService
-				.loadUserByUsername(authenticationRequest.getUsername());
-
-		final String jwt = jwtTokenUtil.generateToken(userDetails);
-
-		return ResponseEntity.ok(new AuthenticationResponse(jwt));
-	}
+        // Return the generated JWT token in the response
+        return ResponseEntity.ok(new AuthenticationResponse(jwt));
+    }
 
 }
 
-@EnableWebSecurity
+@EnableWebSecurity // Enable Spring Security's web security support
 class WebSecurityConfig extends WebSecurityConfigurerAdapter {
-	@Autowired
-	private UserDetailsService myUserDetailsService;
-	@Autowired
-	private JwtRequestFilter jwtRequestFilter;
+    @Autowired // Dependency injection for UserDetailsService
+    private UserDetailsService myUserDetailsService;
 
-	@Autowired
-	public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
-		auth.userDetailsService(myUserDetailsService);
-	}
+    @Autowired // Dependency injection for JwtRequestFilter
+    private JwtRequestFilter jwtRequestFilter;
 
-	@Bean
-	public PasswordEncoder passwordEncoder() {
-		return NoOpPasswordEncoder.getInstance();
-	}
+    @Autowired
+    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+        // Configure AuthenticationManager to use the custom UserDetailsService
+        auth.userDetailsService(myUserDetailsService);
+    }
 
-	@Override
-	@Bean
-	public AuthenticationManager authenticationManagerBean() throws Exception {
-		return super.authenticationManagerBean();
-	}
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        // Define a password encoder (no-op for simplicity)
+        return NoOpPasswordEncoder.getInstance();
+    }
 
-	@Override
-	protected void configure(HttpSecurity httpSecurity) throws Exception {
-		httpSecurity.csrf().disable()
-				.authorizeRequests().antMatchers("/authenticate").permitAll().
-						anyRequest().authenticated().and().
-						exceptionHandling().and().sessionManagement()
-				.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
-		httpSecurity.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
+    @Override
+    @Bean
+    public AuthenticationManager authenticationManagerBean() throws Exception {
+        // Expose the AuthenticationManager as a Spring bean
+        return super.authenticationManagerBean();
+    }
 
-	}
+    @Override
+    protected void configure(HttpSecurity httpSecurity) throws Exception {
+        // Configure HTTP security
+        httpSecurity.csrf().disable() // Disable CSRF protection
+                .authorizeRequests().antMatchers("/authenticate").permitAll() // Permit all requests to /authenticate
+                .anyRequest().authenticated() // Require authentication for any other request
+                .and()
+                .exceptionHandling().and().sessionManagement()
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS); // Do not use session-based authentication
+
+        // Add the JWT filter before the UsernamePasswordAuthenticationFilter
+        httpSecurity.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
+    }
 
 }
