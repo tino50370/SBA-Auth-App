@@ -1,4 +1,4 @@
-# Spring Boot JWT Authentication Example
+# Standard Bank Africa Spring Boot JWT Authentication App (Forage Job Simulation)
 
 This is a simple Spring Boot application that demonstrates how to implement JWT (JSON Web Token) based authentication and authorization using Spring Security. The application exposes two endpoints:
 1. `/authenticate`: Authenticates a user and returns a JWT token.
